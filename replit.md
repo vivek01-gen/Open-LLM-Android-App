@@ -1,6 +1,6 @@
-# [Project name]
+# Open LLM
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An offline-first Flutter Android app for chatting with quantized GGUF models through a local llama.cpp server.
 
 ## Run & Operate
 
@@ -10,6 +10,7 @@ _Replace the heading above with the project's name, and this line with one sente
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
+- Flutter app source: `open_llm/`; run with `flutter pub get && flutter run` in a Flutter-enabled environment.
 
 ## Stack
 
@@ -22,23 +23,29 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `open_llm/lib/main.dart` — Material 3 screens and navigation
+- `open_llm/lib/services/` — SQLite persistence, llama-server streaming client, app state, and Termux bridge
+- `open_llm/lib/models/` — local chat/model/history records
+- `open_llm/lib/theme/` — light and dark theme tokens
+- `open_llm/android/` — Android app shell and optional Termux:API method channel
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The app is local-only by design: the only network client is configurable llama-server and direct model downloads.
+- SQLite is the source of truth for chats, messages, models, settings, MCP allowlists, and terminal history.
+- Termux execution is opt-in and every command is gated by a confirm dialog before the native bridge is called.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+On first launch, users review privacy, choose permissions, import/download GGUF models, chat with streaming responses from llama-server, and configure the endpoint, theme, MCP allowlist, and optional Termux integration.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+The core app must function completely with Termux disabled and must not add cloud sync, accounts, analytics, or media generation.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+The Flutter SDK is not installed in this workspace, so Android runtime verification must be performed in a Flutter-enabled environment.
 
 ## Pointers
 
