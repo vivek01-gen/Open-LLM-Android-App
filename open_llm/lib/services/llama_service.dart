@@ -49,7 +49,7 @@ class LlamaService {
           if (token is String) yield token;
         } on FormatException {
           throw const LlamaException('The local server sent a malformed streaming response.');
-        } on TypeError {
+        } catch (_) {
           throw const LlamaException('The local server sent an unexpected streaming response.');
         }
     }

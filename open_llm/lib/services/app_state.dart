@@ -21,6 +21,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   int? activeModelId;
   bool _isBackgrounded = false;
   bool onboardingComplete = false;
+  bool initialized = false;
   bool termuxEnabled = false;
   bool darkMode = true;
   String? activeAttachment;
@@ -43,12 +44,17 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     onboardingComplete = await db.setting('onboarding') == 'true';
     termuxEnabled = await db.setting('termux') == 'true';
     darkMode = (await db.setting('darkMode')) != 'false';
-    llama.endpoint = await db.setting('endpoint') ?? llama.endpoint;
+    final storedEndpoint = await db.setting('endpoint');
+    final storedUri = storedEndpoint == null ? null : Uri.tryParse(storedEndpoint);
+    if (storedUri != null && storedUri.scheme == 'http' && ['localhost', '127.0.0.1', '::1'].contains(storedUri.host)) {
+      llama.endpoint = storedEndpoint;
+    }
     final storedModel = await db.setting('activeModelId');
     activeModelId = storedModel == null ? (models.isEmpty ? null : models.first.id) : int.tryParse(storedModel);
     if (activeModelId != null && !models.any((model) => model.id == activeModelId)) {
       activeModelId = models.isEmpty ? null : models.first.id;
     }
+    initialized = true;
     notifyListeners();
   }
   Future<void> finishOnboarding() async { onboardingComplete = true; await db.setSetting('onboarding', 'true'); notifyListeners(); }
@@ -64,7 +70,15 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     return true;
   }
   Future<void> selectModel(LocalModel model) async { activeModelId = model.id; await db.setSetting('activeModelId', '${model.id}'); notifyListeners(); }
-  Future<void> addMcpServer(String name, String url) async { await db.addMcpServer(name, url); mcpServers = await db.mcpServers(); notifyListeners(); }
+  Future<void> addMcpServer(String name, String url) async {
+    final uri = Uri.tryParse(url.trim());
+    if (name.trim().isEmpty || uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      return;
+    }
+    await db.addMcpServer(name.trim(), url.trim());
+    mcpServers = await db.mcpServers();
+    notifyListeners();
+  }
   Future<void> deleteMcpServer(int id) async { await db.deleteMcpServer(id); mcpServers = await db.mcpServers(); notifyListeners(); }
   Future<void> addModelFromFile() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['gguf']);
@@ -105,7 +119,13 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       if (await file.exists()) await file.delete();
       rethrow;
     }
-    await db.addModel(name, file.path, received); models = await db.models(); activeModelId ??= models.first.id; notifyListeners();
+    await db.addModel(name, file.path, received);
+    models = await db.models();
+    if (activeModelId == null) {
+      activeModelId = models.first.id;
+      await db.setSetting('activeModelId', '${activeModelId!}');
+    }
+    notifyListeners();
   }
   Future<void> deleteModel(LocalModel model) async {
     await db.deleteModel(model.id);

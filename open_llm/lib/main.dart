@@ -18,7 +18,11 @@ class OpenLlmApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Open LLM',
           theme: state.darkMode ? AppTheme.dark() : AppTheme.light(),
-          home: state.onboardingComplete ? const ShellScreen() : const OnboardingScreen(),
+          home: !state.initialized
+              ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+              : state.onboardingComplete
+                  ? const ShellScreen()
+                  : const OnboardingScreen(),
         ),
       );
 }
@@ -345,5 +349,26 @@ Future<void> _mcpDialog(BuildContext context, AppState state) async { final n = 
 
 class TerminalHistoryScreen extends StatelessWidget {
   const TerminalHistoryScreen({super.key});
-  @override Widget build(BuildContext context) => Consumer<AppState>(builder: (_, state, __) => Scaffold(appBar: AppBar(title: const Text('Terminal history')), body: state.terminalEntries.isEmpty ? const Center(child: Text('No commands have been run.')) : ListView.builder(padding: const EdgeInsets.all(16), itemCount: state.terminalEntries.length, itemBuilder: (_, i) { final e = state.terminalEntries[i]; return ListTile(leading: Icon(e.success ? Icons.check_circle : Icons.error, color: e.success ? Colors.green : Colors.red), title: Text(e.command, style: const TextStyle(fontFamily: 'monospace')), subtitle: Text(DateFormat.yMMMd().add_jm().format(e.createdAt)); })));
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AppState>(
+      builder: (_, state, __) => Scaffold(
+        appBar: AppBar(title: const Text('Terminal history')),
+        body: state.terminalEntries.isEmpty
+            ? const Center(child: Text('No commands have been run.'))
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: state.terminalEntries.length,
+                itemBuilder: (_, i) {
+                  final entry = state.terminalEntries[i];
+                  return ListTile(
+                    leading: Icon(entry.success ? Icons.check_circle : Icons.error, color: entry.success ? Colors.green : Colors.red),
+                    title: Text(entry.command, style: const TextStyle(fontFamily: 'monospace')),
+                    subtitle: Text(DateFormat.yMMMd().add_jm().format(entry.createdAt)),
+                  );
+                },
+              ),
+      ),
+    );
+  }
 }
