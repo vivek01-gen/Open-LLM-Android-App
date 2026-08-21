@@ -23,6 +23,11 @@ class MainActivity : FlutterActivity() {
             }
             try {
                 val intent = Intent("com.termux.api.RUN_COMMAND")
+                intent.setPackage("com.termux.api")
+                if (packageManager.queryBroadcastReceivers(intent, 0).isEmpty()) {
+                    result.success(false)
+                    return@setMethodCallHandler
+                }
                 intent.putExtra("com.termux.api.RUN_COMMAND_PATH", "/data/data/com.termux/files/usr/bin/sh")
                 intent.putExtra("com.termux.api.RUN_COMMAND_ARGUMENTS", arrayOf("-c", command))
                 intent.putExtra("com.termux.api.RUN_COMMAND_BACKGROUND", true)
