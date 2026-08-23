@@ -1,0 +1,40 @@
+Ek hi prompt mein sab combine kar diya — Replit AI ko ye pura paste kar de:
+
+---
+
+**Fix Prompt — Gradle Build Failure (Complete)**
+
+The GitHub Actions build for this Flutter project is failing due to two related issues. Fix both:
+
+**1. Missing Gradle wrapper files**
+`android/gradle/wrapper/` folder is completely missing — no `gradle-wrapper.properties`, no `gradle-wrapper.jar`. Also check if `android/gradlew` and `android/gradlew.bat` are missing. Without these, the build resolves an unpinned, too-new Gradle version that pulls in AGP 9+, breaking compatibility.
+
+- Add `android/gradle/wrapper/gradle-wrapper.properties` with Gradle version **8.7**:
+```
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-all.zip
+```
+- Add `android/gradle/wrapper/gradle-wrapper.jar` (the actual wrapper jar, not a placeholder)
+- Add `android/gradlew` and `android/gradlew.bat` if missing
+- Make sure none of these are excluded by `.gitignore` — commit all of them for real
+
+**2. Unpinned Flutter version in CI workflow**
+`.github/workflows/build.yml` has:
+```yaml
+flutter-version: '3.x'
+```
+This pulls whatever the latest Flutter stable is, which can silently break AGP/Gradle compatibility assumptions. Change it to a specific pinned version compatible with AGP 8.5.2 and Gradle 8.7, e.g.:
+```yaml
+flutter-version: '3.24.5'
+```
+
+**3. Confirm consistency across the whole chain**
+- `android/settings.gradle`: AGP stays at `8.5.2` (already correct, don't touch)
+- `android/app/build.gradle`: leave as is unless it references an incompatible SDK/NDK version — check `compileSdk`, `targetSdk`, `ndkVersion` all resolve fine with AGP 8.5.2
+- `android/gradle.properties`: already fine (`org.gradle.jvmargs`, AndroidX, Jetifier) — no changes needed there
+
+**4. Verify end to end**
+After making these changes, run `flutter build apk --release` locally in the CI environment and confirm it completes with exit code 0, not just that Gradle sync succeeds. Report the final build output path and APK size if successful. If it still fails, paste the new full error — don't just say "still failing."
+
+---
+
+Isko de de, push hone ke baad Actions tab check kar lena.
