@@ -38,8 +38,8 @@ class DatabaseService {
   }
   Future<int> createChat(String title) async => (await database).insert('chats', {'title': title, 'created_at': DateTime.now().millisecondsSinceEpoch});
   Future<List<Message>> messages(int chatId, {int limit = 100}) async {
-    final rows = await (await database).query('messages', where: 'chat_id = ?', whereArgs: [chatId], orderBy: 'created_at DESC', limit: '$limit');
-    rows.reverse();
+    var rows = await (await database).query('messages', where: 'chat_id = ?', whereArgs: [chatId], orderBy: 'created_at DESC', limit: '$limit');
+    rows = rows.reversed.toList();
     return rows.map((r) => Message(id: r['id'] as int, chatId: r['chat_id'] as int, role: r['role'] as String, content: r['content'] as String, attachmentPath: r['attachment_path'] as String?, createdAt: DateTime.fromMillisecondsSinceEpoch(r['created_at'] as int))).toList();
   }
   Future<int> addMessage(int chatId, String role, String content, {String? attachmentPath}) async => (await database).insert('messages', {'chat_id': chatId, 'role': role, 'content': content, 'attachment_path': attachmentPath, 'created_at': DateTime.now().millisecondsSinceEpoch});
