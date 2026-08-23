@@ -14,3 +14,17 @@ mtime_ms = 1787277891415
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:a584e375-0e82-42bc-8180-70ee005545ac/ff9e809f-d393-44e8-8d46-6429a0663f1a/0a0b0730-1b11-412f-9f27-d8bc7311a7d6"
 storage_version_token = "1787277897442657"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "8msa5lhSub6CF7UjE6rSp"
+uri = "file://dist/open-llm-complete.zip"
+type = "unspecified"
+title = "Complete Open LLM Flutter project"
+description = "Complete source ZIP with the open_llm Flutter project, pinned Gradle 8.7 wrapper, valid binary wrapper JAR, and repository-level GitHub Actions workflow."
+logical_id = "669d30f7-42c0-4115-8cb4-831118d8214e"
+content_hash = "sha256:275f09e68fad421eb5582a14be05aa2988bb77e9bd171cef5ef4ae0e5eeda359"
+size = 65538
+mtime_ms = 1787456671802
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:a584e375-0e82-42bc-8180-70ee005545ac/669d30f7-42c0-4115-8cb4-831118d8214e/f00dc1aa-a5bd-49da-aea9-a2dd7abb334a"
+storage_version_token = "1787456678192940"
+content_type = "application/octet-stream"
