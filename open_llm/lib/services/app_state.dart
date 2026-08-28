@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -88,7 +89,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     if (storedUri != null &&
         storedUri.scheme == 'http' &&
         ['localhost', '127.0.0.1', '::1'].contains(storedUri.host)) {
-      llama.endpoint = storedEndpoint;
+      llama.endpoint = storedEndpoint ?? llama.endpoint;
     }
     final storedModel = await db.setting('activeModelId');
     activeModelId = storedModel == null
@@ -244,7 +245,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       allowedExtensions: ['gguf'],
     );
     final file = result?.files.single;
-    if (file?.path == null) return;
+    if (file == null || file.path == null) return;
     final storedPath = await _copyIntoModelDirectory(file.path!, file.name);
     await db.addModel(file.name, storedPath, file.size);
     models = await db.models();
