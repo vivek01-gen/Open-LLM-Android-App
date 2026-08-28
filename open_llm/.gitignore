@@ -1,0 +1,41 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code related
+.vscode/
+
+# Flutter/Dart/Pub related
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/pubspec.lock
+
+# Android related
+**/android/.gradle/
+**/android/local.properties
+**/android/app/release/
+**/android/app/debug/
+
+# iOS related
+**/ios/Pods/
+**/ios/Runner.xcworkspace
+**/ios/Runner.xcodeproj/project.xcworkspace
+**/ios/Runner.xcodeproj/xcuserdata/
