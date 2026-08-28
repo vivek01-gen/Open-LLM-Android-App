@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'models/app_models.dart';
-import 'models/device_models.dart';
 import 'models/model_catalog.dart';
 import 'screens/legal_screens.dart';
 import 'services/app_state.dart';
