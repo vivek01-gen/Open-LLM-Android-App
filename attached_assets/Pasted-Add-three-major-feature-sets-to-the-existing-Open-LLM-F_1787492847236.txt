@@ -1,0 +1,66 @@
+Add three major feature sets to the existing Open LLM Flutter app: (A) device-aware model catalog with one-tap Hugging Face download, (B) mobile & data security hardening, and (C) legal/permission compliance pages. Build all of this on top of the existing architecture (Flutter, sqflite, llama-server local HTTP client) — don't restructure what already works.
+A. Device-Aware Smart Model Catalog
+A1. Device Capability Scanner
+On first launch (after onboarding, before showing any model options), scan the device and classify it into a tier:
+Read available RAM (device_info_plus package), CPU core count, and available storage space
+Classify into tiers, for example:
+Tier 1 (Low): ≤3GB RAM → only show 1B–2B parameter Q4 quantized models
+Tier 2 (Mid): 4–6GB RAM → show up to 3B–4B Q4 models
+Tier 3 (High): 8GB+ RAM → show up to 7B Q4 models
+Store this tier in local settings so it doesn't need to rescan every launch (but add a "Rescan Device" button in Settings in case hardware assumptions need refreshing)
+Show the user a simple one-line result: e.g. "Your device supports models up to ~3B parameters comfortably"
+A2. Curated Free Model Catalog (bundled in-app, not fetched from a remote API)
+Hard-code a curated list of known-good, genuinely free, direct-downloadable GGUF models from Hugging Face, each tagged with its tier and approximate RAM requirement. Example entries to include (verify current direct .gguf download links before finalizing, since exact repo paths change):
+Tier 1: TinyLlama-1.1B-Chat (Q4_K_M), Qwen2.5-1.5B-Instruct (Q4_K_M)
+Tier 2: Phi-3-mini-4B-instruct (Q4_K_M), Gemma-2-2B-it (Q4_K_M)
+Tier 3: Llama-3.2-7B-Instruct (Q4_K_M), Mistral-7B-Instruct (Q4_K_M)
+Only show models matching or below the device's detected tier by default. Add a small "Show all models (may be slow or unstable on your device)" toggle for advanced users who want to override — but keep it off by default and show a clear warning when enabled.
+A3. One-Tap Download & Auto-Setup
+For each catalog model card, show: name, size, tier badge, short description ("fast, good for quick chats" / "smarter but slower"). On tap:
+Download the GGUF file directly from its Hugging Face direct-download link in the background, with a progress bar (percentage + MB downloaded/total)
+Verify the download completed fully (check file size matches expected, or checksum if available) before marking it usable
+Automatically register the model in the local database and set it as the active model — no manual file-picker step needed for catalog models
+Automatically start/restart the local llama-server process pointed at the new model
+Show a "Ready to chat" confirmation and route the user straight into the Chat screen
+The existing manual "paste a GGUF link" flow stays available for advanced users under a separate "Add Custom Model" option — don't remove it, just make the curated catalog the default, easier first-run path.
+A4. Fast Loading & Chat Performance
+Set llama-server thread count based on detected CPU core count (e.g. cores - 1, leave one free for UI)
+Use memory-mapped model loading (--mmap) so switching models doesn't require re-reading the whole file into RAM every time
+Cap context window size based on device tier (lower tiers get a smaller context window to keep memory use safe)
+Show a lightweight loading indicator while the model is loading into memory before the first chat message can be sent, with a "This may take 10-30 seconds on first load" message
+B. Mobile & Data Security Hardening
+B1. Local Data Protection
+Chat history database should be stored in app-private storage only (already the case with sqflite default path) — confirm no chat data is ever written to public/shared storage
+Add an optional app lock (PIN or biometric via local_auth package) that gates opening the app itself — off by default, user enables in Settings
+Add a "Clear All Data" option in Settings that wipes chat history, models, and settings with a confirmation dialog — genuinely deletes files, not just database rows
+B2. Permission Minimalism
+Request storage permission only when actually needed (first model download or file picker use), not upfront at onboarding
+Handle scoped storage correctly for Android 11+ (use app-specific directories via path_provider, avoid broad MANAGE_EXTERNAL_STORAGE unless genuinely required)
+Termux integration permission stays fully separate and optional, as already implemented — don't merge it with storage permission requests
+B3. No Silent Network Activity
+Confirm the app makes zero background network calls except: (a) the user-configured local llama-server endpoint, (b) explicit Hugging Face model downloads the user initiated, (c) nothing else — no analytics, no crash reporting SDKs, no ad SDKs
+Add a Settings toggle "Network Activity Log" (optional, off by default) that shows a simple list of the last N network requests the app made, so a privacy-conscious user can self-verify — this builds trust without needing to trust the developer's word alone
+B4. Model File Integrity
+When downloading from Hugging Face, validate the file isn't corrupted/truncated before allowing it to load (size check minimum, and SHA256 if the source provides one)
+Sandbox all downloaded model files to app-private storage — never write executable content to shared/public storage
+C. Legal & Permission Compliance Pages
+C1. Expand the existing onboarding Privacy Policy screen into a real, specific policy (not placeholder lorem text) covering:
+What data the app collects (answer: none is sent anywhere; everything stays on-device)
+What local data is stored (chat history, model files, settings) and where (app-private storage)
+What permissions the app requests and why (storage — for model files; optional Termux — for command execution; optional biometric — for app lock)
+That the user can delete all data at any time via Settings
+C2. Add a Terms & Disclaimer screen (new, doesn't exist yet), covering:
+AI-generated content may be inaccurate — user responsibility to verify important information
+The optional terminal/Termux feature can execute real commands on the device — clearly state the user is responsible for confirming every command themselves, the app itself never executes anything without explicit per-command tap confirmation
+Models are downloaded from third-party sources (Hugging Face); the app doesn't control or guarantee the content those models produce
+C3. Add a Permissions Explainer screen, shown before each permission request (not just a generic OS popup) — plain language, one card per permission:
+Storage: "Needed to save AI models on your device so chat works offline"
+Termux (optional): "Only if you enable Advanced terminal features — lets the AI run commands you approve, one at a time"
+Biometric (optional): "Only if you enable App Lock — protects your chats from others opening the app"
+C4. Gate app functionality on explicit consent
+The user must actively agree to the Privacy Policy and Terms during onboarding before reaching the main app (checkbox, not pre-checked) — this already partially exists, make sure it's enforced, not skippable
+Individual optional features (Termux, biometric lock) each get their own explicit opt-in toggle in Settings with the relevant explainer shown at time of enabling, not just buried in the policy text
+C5. Add an About & Legal hub in Settings
+Single place linking to: Privacy Policy, Terms & Disclaimer, Permissions Explainer, Open Source Licenses (for the packages used), app version, and a "Clear All Data" shortcut.
+Deliverable
+Implement all of the above on top of the existing project structure. Keep state management consistent with what's already working (the AnimatedBuilder/ChangeNotifier pattern already in place — don't introduce a different state management library). Report back: which Hugging Face model links you used for the curated catalog (so they can be verified as still valid), and confirm the device capability scan logic with the actual thresholds you implemented.

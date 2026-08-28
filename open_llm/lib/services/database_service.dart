@@ -3,6 +3,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../models/app_models.dart';
+import '../models/device_models.dart';
 
 class DatabaseService {
   Database? _db;
@@ -12,7 +13,7 @@ class DatabaseService {
     final dir = await getApplicationDocumentsDirectory();
     _db = await openDatabase(
       p.join(dir.path, 'open_llm.db'),
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await _createTables(db);
       },
@@ -55,6 +56,53 @@ class DatabaseService {
     return rows.map((r) => TerminalEntry(id: r['id'] as int, command: r['command'] as String, createdAt: DateTime.fromMillisecondsSinceEpoch(r['created_at'] as int), success: r['success'] == 1)).toList();
   }
   Future<void> addTerminalEntry(String command, bool success) async => (await database).insert('terminal_history', {'command': command, 'created_at': DateTime.now().millisecondsSinceEpoch, 'success': success ? 1 : 0});
+
+  Future<List<NetworkLogEntry>> networkLogs({int limit = 50}) async {
+    final rows = await (await database).query(
+      'network_logs',
+      orderBy: 'created_at DESC',
+      limit: '$limit',
+    );
+    return rows
+        .map(
+          (r) => NetworkLogEntry(
+            id: r['id'] as int,
+            method: r['method'] as String,
+            url: r['url'] as String,
+            statusCode: r['status_code'] as int?,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(r['created_at'] as int),
+          ),
+        )
+        .toList();
+  }
+
+  Future<void> addNetworkLog(
+    String method,
+    String url,
+    int? statusCode,
+  ) async {
+    final databaseInstance = await database;
+    await databaseInstance.insert('network_logs', {
+      'method': method,
+      'url': url,
+      'status_code': statusCode,
+      'created_at': DateTime.now().millisecondsSinceEpoch,
+    });
+    await databaseInstance.delete(
+      'network_logs',
+      where: 'id NOT IN (SELECT id FROM network_logs ORDER BY created_at DESC LIMIT 50)',
+    );
+  }
+
+  Future<void> clearAllData() async {
+    final databasePath = p.join(
+      (await getApplicationDocumentsDirectory()).path,
+      'open_llm.db',
+    );
+    await _db?.close();
+    _db = null;
+    await deleteDatabase(databasePath);
+  }
 }
 
 Future<void> _createTables(Database db) async {
@@ -64,4 +112,5 @@ Future<void> _createTables(Database db) async {
   await db.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
   await db.execute('CREATE TABLE IF NOT EXISTS mcp_servers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, url TEXT NOT NULL UNIQUE)');
   await db.execute('CREATE TABLE IF NOT EXISTS terminal_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, created_at INTEGER NOT NULL, success INTEGER NOT NULL)');
+  await db.execute('CREATE TABLE IF NOT EXISTS network_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, method TEXT NOT NULL, url TEXT NOT NULL, status_code INTEGER, created_at INTEGER NOT NULL)');
 }

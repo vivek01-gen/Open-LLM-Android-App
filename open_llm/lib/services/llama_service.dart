@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -11,7 +12,13 @@ class LlamaException implements Exception {
 
 class LlamaService {
   String endpoint;
-  LlamaService({this.endpoint = 'http://127.0.0.1:8080'});
+  LlamaService({
+    this.endpoint = 'http://127.0.0.1:8080',
+    this.onNetworkRequest,
+  });
+
+  final Future<void> Function(String method, String url, int? statusCode)?
+      onNetworkRequest;
 
   Stream<String> chat({required List<Map<String, String>> messages, double temperature = 0.7}) async* {
     final uri = Uri.tryParse('$endpoint/v1/chat/completions');
@@ -19,6 +26,18 @@ class LlamaService {
       throw const LlamaException('The endpoint must point to localhost, 127.0.0.1, or ::1.');
     }
     final client = http.Client();
+    var networkRequestRecorded = false;
+
+    Future<void> recordNetworkRequest(int? statusCode) async {
+      if (networkRequestRecorded) return;
+      networkRequestRecorded = true;
+      try {
+        await onNetworkRequest?.call('POST', uri.toString(), statusCode);
+      } catch (_) {
+        // A local audit log must never make a local chat request fail.
+      }
+    }
+
     try {
       final request = http.Request('POST', uri);
       request.headers['content-type'] = 'application/json';
@@ -27,6 +46,7 @@ class LlamaService {
         const Duration(seconds: 20),
         onTimeout: () => throw const LlamaException('The local server did not respond within 20 seconds.'),
       );
+      await recordNetworkRequest(response.statusCode);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw LlamaException('Local llama-server returned HTTP ${response.statusCode}.');
       }
@@ -57,12 +77,19 @@ class LlamaService {
         throw const LlamaException('The local server closed the stream before completing the response.');
       }
     } on LlamaException {
+      await recordNetworkRequest(null);
       rethrow;
     } on http.ClientException {
+      await recordNetworkRequest(null);
       throw const LlamaException('Could not connect to the local llama-server. Check that it is running.');
     } on SocketException {
+      await recordNetworkRequest(null);
       throw const LlamaException('Could not connect to the local llama-server. Check that it is running.');
+    } on TimeoutException {
+      await recordNetworkRequest(null);
+      throw const LlamaException('The local llama-server did not respond within 20 seconds.');
     } on FormatException {
+      await recordNetworkRequest(null);
       throw const LlamaException('The local server returned invalid JSON.');
     } finally {
       client.close();
