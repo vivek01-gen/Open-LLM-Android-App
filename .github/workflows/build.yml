@@ -48,22 +48,23 @@ jobs:
           storeFile=release-keystore.jks
           EOF
 
-      - name: Build release APK
+      - name: Build release APKs (split per ABI)
         working-directory: open_llm
-        run: flutter build apk --release
+        run: flutter build apk --release --split-per-abi
 
-      - name: Verify APK signature
+      - name: Verify APK signatures
         working-directory: open_llm
         run: |
-          APK=build/app/outputs/flutter-apk/app-release.apk
-          if [ -f "$APK" ]; then
-            echo "=== APK info ==="
-            ls -lh "$APK"
-            $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools/ | tail -1)/apksigner verify --verbose "$APK" || echo "Warning: apksigner not found or verification failed"
-          fi
+          APK_DIR=build/app/outputs/flutter-apk
+          for apk in "$APK_DIR"/app-*-release.apk; do
+            [ -f "$apk" ] || continue
+            echo "=== $apk ==="
+            ls -lh "$apk"
+            $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools/ | tail -1)/apksigner verify --verbose "$apk" || echo "Warning: apksigner not found or verification failed for $apk"
+          done
 
-      - name: Upload release APK
+      - name: Upload release APKs
         uses: actions/upload-artifact@v4
         with:
-          name: open-llm-release-apk
-          path: open_llm/build/app/outputs/flutter-apk/app-release.apk
+          name: open-llm-release-apks
+          path: open_llm/build/app/outputs/flutter-apk/app-*-release.apk

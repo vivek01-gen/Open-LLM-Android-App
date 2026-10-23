@@ -59,9 +59,10 @@ The workflow `.github/workflows/build.yml` already:
 1. Decodes `KEYSTORE_BASE64` into `open_llm/android/app/release-keystore.jks`
    (only when the secret is set)
 2. Writes `open_llm/android/key.properties` from the other three secrets
-3. Builds the release APK with `flutter build apk --release`
-4. Verifies the APK signature with `apksigner`
-5. Uploads the signed APK as a workflow artifact
+3. Builds the release APKs with `flutter build apk --release --split-per-abi`
+   (one APK per ABI — arm64-v8a, armeabi-v7a, x86_64)
+4. Verifies each APK's signature with `apksigner`
+5. Uploads all split APKs as workflow artifacts
 
 If the secrets are **not** set, the `Decode keystore` step is skipped, and
 `build.gradle` falls back to the debug signing config so the CI build does not
