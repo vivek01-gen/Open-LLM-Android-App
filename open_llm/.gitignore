@@ -34,6 +34,12 @@
 **/android/app/release/
 **/android/app/debug/
 
+# Signing keys — NEVER commit
+*.jks
+*.keystore
+**/key.properties
+**/release-keystore.jks
+
 # iOS related
 **/ios/Pods/
 **/ios/Runner.xcworkspace

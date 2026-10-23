@@ -47,3 +47,14 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Android signing keys — NEVER commit these
+*.jks
+*.keystore
+**/key.properties
+
+# Flutter / Android build outputs
+**/build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
