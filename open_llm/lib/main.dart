@@ -968,6 +968,17 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
+  // The persisted active model may no longer be in the discovered catalog
+  // (e.g. the GGUF file was deleted). Fall back to the first available model
+  // instead of letting the dropdown throw "exactly one item with value".
+  static int? _activeModelId(AppState state) {
+    final active = state.activeModelId;
+    if (active != null && state.models.any((model) => model.id == active)) {
+      return active;
+    }
+    return state.models.first.id;
+  }
+
   @override
   Widget build(BuildContext context) => Consumer<AppState>(
         builder: (_, state, __) => Scaffold(
@@ -998,7 +1009,7 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () => _endpointDialog(context, state)),
               if (state.models.isNotEmpty)
                 DropdownButtonFormField<int>(
-                  value: state.activeModelId,
+                  value: _activeModelId(state),
                   decoration:
                       const InputDecoration(labelText: 'Active GGUF model'),
                   items: [

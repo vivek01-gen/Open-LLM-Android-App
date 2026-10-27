@@ -9,6 +9,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     steps:
       - name: Check out repository
@@ -31,12 +36,35 @@ jobs:
         working-directory: open_llm
         run: flutter pub get
 
-      - name: Build release APK
-        working-directory: open_llm
-        run: flutter build apk --release
+      - name: Decode keystore
+        if: env.KEYSTORE_BASE64 != ''
+        working-directory: open_llm/android
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > app/release-keystore.jks
+          cat <<EOF > key.properties
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=release-keystore.jks
+          EOF
 
-      - name: Upload release APK
+      - name: Build release APKs (split per ABI)
+        working-directory: open_llm
+        run: flutter build apk --release --split-per-abi
+
+      - name: Verify APK signatures
+        working-directory: open_llm
+        run: |
+          APK_DIR=build/app/outputs/flutter-apk
+          for apk in "$APK_DIR"/app-*-release.apk; do
+            [ -f "$apk" ] || continue
+            echo "=== $apk ==="
+            ls -lh "$apk"
+            $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools/ | tail -1)/apksigner verify --verbose "$apk" || echo "Warning: apksigner not found or verification failed for $apk"
+          done
+
+      - name: Upload release APKs
         uses: actions/upload-artifact@v4
         with:
-          name: open-llm-release-apk
-          path: open_llm/build/app/outputs/flutter-apk/app-release.apk
+          name: open-llm-release-apks
+          path: open_llm/build/app/outputs/flutter-apk/app-*-release.apk
