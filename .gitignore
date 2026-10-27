@@ -44,9 +44,17 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Replit
+# Replit / AI tool artifacts — never commit
+.replit
+replit.nix
+.replitignore
+replit.md
+.agents/
+.attached_assets/
 .cache/
 .local/
+.upm/
+*.zip
 
 # Android signing keys — NEVER commit these
 *.jks

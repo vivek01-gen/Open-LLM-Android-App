@@ -3,6 +3,18 @@
 *.log
 *.pyc
 *.swp
+*.zip
+
+# Replit / AI tool artifacts — never commit
+.replit
+replit.nix
+.replitignore
+replit.md
+.agents/
+.attached_assets/
+.cache/
+.local/
+.upm/
 .DS_Store
 .atom/
 .buildlog/

@@ -1,1 +1,0 @@
-- [Flutter build environment](flutter-build-environment.md) — Flutter SDK is unavailable in this pnpm workspace; verify Dart/Android builds externally.
