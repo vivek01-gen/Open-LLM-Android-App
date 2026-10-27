@@ -20,3 +20,4 @@
 
 # Keep MethodChannel plumbing referenced by name.
 -keep class io.flutter.plugin.common.MethodChannel { *; }
+-dontwarn com.google.android.play.core.**
